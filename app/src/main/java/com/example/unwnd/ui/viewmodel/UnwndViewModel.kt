@@ -2,49 +2,96 @@ package com.example.unwnd.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unwnd.data.local.datastore.UserPreferences
 import com.example.unwnd.data.model.Place
 import com.example.unwnd.data.repository.PlaceRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
-class UnwndViewModel(private val repository: PlaceRepository = PlaceRepository()) : ViewModel() {
+class UnwndViewModel(
+    private val repository: PlaceRepository,
+    private val userPreferences: UserPreferences
+) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _selectedCategory = MutableStateFlow("All")
-    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+    val selectedCategory: StateFlow<String> = userPreferences.selectedCategory
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "All")
 
-    val categories = listOf("All", "Rooftop", "Food", "Chill", "Nightlife")
+    private val _userLocation = MutableStateFlow<Pair<Double, Double>?>(null)
+    val userLocation: StateFlow<Pair<Double, Double>?> = _userLocation.asStateFlow()
+
+    val categories = listOf("All", "Rooftop", "Food", "Chill", "Nightlife", "Nature")
+
+    init {
+        viewModelScope.launch {
+            repository.initializeData()
+        }
+    }
+
 
     val filteredPlaces: StateFlow<List<Place>> = combine(
         repository.places,
         _searchQuery,
-        _selectedCategory
-    ) { places, query, category ->
-        places.filter { place ->
-            val matchesQuery = place.name.contains(query, ignoreCase = true) ||
-                    place.description.contains(query, ignoreCase = true) ||
-                    place.tags.any { it.contains(query, ignoreCase = true) }
+        selectedCategory,
+        _userLocation
+    ) { places, query, category, userLocation ->
+        val filtered = places.filter { place ->
+            val matchesQuery = if (query.isBlank()) true else
+                place.name.contains(query, true) ||
+                        place.description.contains(query, true) ||
+                        place.tags.any { it.contains(query, true) }
+
             val matchesCategory = category == "All" || place.category == category
             matchesQuery && matchesCategory
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+        if (userLocation != null) {
+            val (lat, long) = userLocation
+            filtered.sortedBy {
+                calculateDistance(lat, long, it.latitude, it.longitude)
+            }
+        } else {
+            filtered
+        }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
+
+    fun calculateDistance(
+        userLat: Double,
+        userLong: Double,
+        placeLat: Double,
+        placeLong: Double
+    ): Float {
+        val results = FloatArray(1)
+        android.location.Location.distanceBetween(
+            userLat,
+            userLong,
+            placeLat,
+            placeLong,
+            results
+        )
+        return results[0] / 1000f
+    }
 
     fun onSearchQueryChange(newQuery: String) {
         _searchQuery.value = newQuery
     }
 
     fun onCategorySelected(category: String) {
-        _selectedCategory.value = category
+        viewModelScope.launch {
+            userPreferences.saveSelectedCategory(category)
+        }
     }
 
     fun toggleFavorite(id: String) {
-        repository.toggleFavorite(id)
+        viewModelScope.launch {
+            repository.toggleFavorite(id)
+        }
     }
 
     fun getPlaceById(id: String): StateFlow<Place?> {

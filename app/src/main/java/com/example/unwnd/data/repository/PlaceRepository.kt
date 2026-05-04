@@ -1,27 +1,28 @@
 package com.example.unwnd.data.repository
 
+import com.example.unwnd.data.local.dao.PlaceDao
 import com.example.unwnd.data.model.OpeningHour
 import com.example.unwnd.data.model.Place
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 
-class PlaceRepository {
-    private val _places = MutableStateFlow(mockPlaces)
-    val places: Flow<List<Place>> = _places.asStateFlow()
+class PlaceRepository(private val placeDao: PlaceDao) {
 
-    fun getPlaceById(id: String): Flow<Place?> {
-        return _places.map { it.find { place -> place.id == id } }
+    val places: Flow<List<Place>> = placeDao.getAllPlaces()
+
+    suspend fun initializeData() {
+        val currentPlaces = placeDao.getAllPlaces().first()
+        if (currentPlaces.isEmpty()) {
+            placeDao.insertPlaces(mockPlaces)
+        }
     }
 
-    fun toggleFavorite(id: String) {
-        val currentList = _places.value.toMutableList()
-        val index = currentList.indexOfFirst { it.id == id }
-        if (index != -1) {
-            val place = currentList[index]
-            currentList[index] = place.copy(isFavorite = !place.isFavorite)
-            _places.value = currentList
+    fun getPlaceById(id: String): Flow<Place?> = placeDao.getPlaceById(id)
+
+    suspend fun toggleFavorite(id: String) {
+        val place = placeDao.getPlaceById(id).first()
+        place?.let {
+            placeDao.updateFavoriteStatus(id, !it.isFavorite)
         }
     }
 
@@ -36,8 +37,9 @@ class PlaceRepository {
                 rating = 7.5,
                 reviewsCount = 1200,
                 category = "Rooftop",
+                longitude = -1.3237924441667397,
+                latitude = .844254976724116,
                 priceRange = "$$$",
-                distance = "2.5 km",
                 tags = listOf("Chill Vibes", "Live DJ", "Craft Cocktails"),
                 openingHours = listOf(
                     OpeningHour("Mon - Thu", "12:00 PM - 11:00 PM"),
@@ -55,9 +57,11 @@ class PlaceRepository {
                 reviewsCount = 224,
                 category = "Food",
                 priceRange = "$$-$$$",
-                distance = "8.2 km",
                 tags = listOf("Eco-friendly", "Organic", "Outdoor"),
-                waitTime = "15 - 20 mins"
+                waitTime = "15 - 20 mins",
+                longitude = -1.3568239430628966,
+                latitude = 36.73935839206449
+
             ),
             Place(
                 id = "3",
@@ -69,10 +73,12 @@ class PlaceRepository {
                 reviewsCount = 36,
                 category = "Chill",
                 priceRange = "$$$",
-                distance = "4.0 km"
+                tags = listOf("Coffee", "Bar", "Fine Dining"),
+                longitude = -1.2805409399587722,
+                latitude = 36.7684698804247
             ),
             Place(
-                id = "3",
+                id = "4",
                 name = "The Alchemist Bar",
                 description = "The Alchemist Bar is a collective of local and global entrepreneurs in food, fashion, music, and art. We are an outdoor venue in the heart of Westlands, Nairobi and host a wide variety of events on a nightly basis.",
                 imageUrl = "https://images.squarespace-cdn.com/content/v1/63721d83ab8c8b1d0301dca8/1773757515532-AQY537VHM5E8RQ0V7AG5/image-asset.jpeg",
@@ -81,12 +87,12 @@ class PlaceRepository {
                 reviewsCount = 84,
                 category = "Chill",
                 priceRange = "$$",
-                distance = "1.8 km",
-                tags = listOf("Nightlife", "Live Music", "Street Food")
+                tags = listOf("Nightlife", "Live Music", "Street Food"),
+                longitude = -1.2623954171814267,
+                latitude = .804104361376325
             ),
-
             Place(
-                id = "4",
+                id = "5",
                 name = "Karura Forest",
                 description = "The Karura Forest Reserve is an urban upland forest on the outskirts of Nairobi, the capital of Kenya. The forest offers eco-friendly opportunities for Kenyans and visitors to enjoy a leafy green respite from the hustle and bustle of the city to walk, to jog, or simply to sit quietly and experience the serenity of nature in all its diversity.",
                 imageUrl = "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/32/94/66/6c/caption.jpg?w=800&h=400&s=1",
@@ -95,12 +101,12 @@ class PlaceRepository {
                 reviewsCount = 128,
                 category = "Nature",
                 priceRange = "$$",
-                distance = "2.5 km",
-
+                tags = listOf("Forest", "Outdoor", "Eco-Friendly"),
+                longitude = -1.235072320067873,
+                latitude = 36.836814880284344
                 ),
-
             Place(
-                id = "5",
+                id = "6",
                 name = "Artcaffe Westlands",
                 description = "A popular cafe and restaurant known for its stylish interiors, great coffee, and diverse menu. Perfect for casual meetups or remote work sessions.",
                 imageUrl = "https://pub-5bcc3edf34304d04b59dc91e1ad9d2fd.r2.dev/kenya.tortoisepath.com/uploads/2024/03/13075421/Artcaffe-Westage-Mall-Westlands-Nairobi-Kenya-TortoisePathcom-4-1024x1024.webp",
@@ -109,12 +115,12 @@ class PlaceRepository {
                 reviewsCount = 540,
                 category = "Cafe",
                 priceRange = "$$",
-                distance = "2.0 km",
-                tags = listOf("Coffee", "Work Friendly", "Brunch")
+                tags = listOf("Coffee", "Work Friendly", "Brunch"),
+                longitude = -1.2630454095883359,
+                latitude = 36.80195155716095
             ),
-
             Place(
-                id = "6",
+                id = "7",
                 name = "K1 Klub House",
                 description = "A vibrant nightlife spot offering live music, themed nights, and a relaxed outdoor setting. Great for weekend hangouts.",
                 imageUrl = "https://www.upkenya.com/wp-content/uploads/2020/11/K1-Klub-1024x768.jpg",
@@ -123,12 +129,12 @@ class PlaceRepository {
                 reviewsCount = 310,
                 category = "Nightlife",
                 priceRange = "$$",
-                distance = "3.5 km",
-                tags = listOf("Live Music", "DJ", "Outdoor")
+                tags = listOf("Live Music", "DJ", "Outdoor"),
+                longitude = -1.2680136127337607,
+                latitude = 36.81220400555643
             ),
-
             Place(
-                id = "7",
+                id = "8",
                 name = "Giraffe Centre",
                 description = "A unique wildlife experience where visitors can feed and interact with endangered Rothschild giraffes.",
                 imageUrl = "https://annestkenyasafaris.com/wp-content/uploads/2025/04/the-giraffes-seem-to-1024x682.jpg.webp",
@@ -137,12 +143,12 @@ class PlaceRepository {
                 reviewsCount = 890,
                 category = "Nature",
                 priceRange = "$$",
-                distance = "10.0 km",
-                tags = listOf("Wildlife", "Outdoor", "Family Friendly")
+                tags = listOf("Wildlife", "Outdoor", "Family Friendly"),
+                longitude = -1.3761976510178946,
+                latitude = 36.74507864735747
             ),
-
             Place(
-                id = "8",
+                id = "9",
                 name = "Java House CBD",
                 description = "A well-known Kenyan coffee chain offering reliable meals, coffee, and a relaxed environment in the city center.",
                 imageUrl = "https://galleria.co.ke/storage/2022/04/Java-Logo.png",
@@ -151,12 +157,12 @@ class PlaceRepository {
                 reviewsCount = 670,
                 category = "Cafe",
                 priceRange = "$$",
-                distance = "1.2 km",
-                tags = listOf("Coffee", "Meetups", "Quick Bites")
+                tags = listOf("Coffee", "Meetups", "Quick Bites"),
+                longitude = -1.2750919259421247,
+                latitude = 36.82294439075688
             ),
-
             Place(
-                id = "9",
+                id = "10",
                 name = "Two Rivers Mall",
                 description = "One of the largest malls in East Africa featuring shopping, restaurants, entertainment, and a Ferris wheel.",
                 imageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPVMC5CTDc7tHZVfl7-P4OOcXGJGcnHI-wPg&s",
@@ -165,12 +171,12 @@ class PlaceRepository {
                 reviewsCount = 1200,
                 category = "Entertainment",
                 priceRange = "$$-$$$",
-                distance = "9.5 km",
-                tags = listOf("Shopping", "Cinema", "Family Friendly")
+                tags = listOf("Shopping", "Cinema", "Family Friendly"),
+                longitude = -1.2115791816097337,
+                latitude = 36.796373845505315
             ),
-
             Place(
-                id = "10",
+                id = "11",
                 name = "Hero Restaurant",
                 description = "A trendy Asian-fusion restaurant with a bold comic-book aesthetic, offering sushi, cocktails, and a unique dining vibe.",
                 imageUrl = "https://i0.wp.com/wareontheglobe.com/wp-content/uploads/2024/03/IMG_6376.jpeg?resize=705%2C435&ssl=1",
@@ -179,8 +185,9 @@ class PlaceRepository {
                 reviewsCount = 410,
                 category = "Food",
                 priceRange = "$$$",
-                distance = "8.8 km",
-                tags = listOf("Sushi", "Cocktails", "Trendy")
+                tags = listOf("Sushi", "Cocktails", "Trendy"),
+                longitude = -1.2303898832236093,
+                latitude = 36.804825760849404
             )
         )
     }

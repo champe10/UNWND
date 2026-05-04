@@ -17,6 +17,11 @@ import androidx.compose.ui.tooling.preview.Preview
 fun ExploreScreen(
     viewModel: UnwndViewModel
 ) {
+    ExploreContent()
+}
+
+@Composable
+fun ExploreContent() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -47,8 +52,6 @@ fun ExploreScreen(
 @Composable
 fun ExploreScreenPreview() {
     UNWNDTheme {
-        ExploreScreen(
-            viewModel = UnwndViewModel()
-        )
+        ExploreContent()
     }
 }

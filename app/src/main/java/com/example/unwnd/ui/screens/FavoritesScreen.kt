@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.sp
 import com.example.unwnd.ui.theme.UNWNDTheme
 import com.example.unwnd.ui.viewmodel.UnwndViewModel
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.coroutines.flow.map
+import java.util.Locale
 
 @Composable
 fun FavoritesScreen(
@@ -22,8 +22,26 @@ fun FavoritesScreen(
     onPlaceClick: (String) -> Unit
 ) {
     val favorites by viewModel.filteredPlaces.collectAsState()
+    val userLocation by viewModel.userLocation.collectAsState()
     val favoritePlaces = favorites.filter { it.isFavorite }
 
+    FavoritesContent(
+        favoritePlaces = favoritePlaces,
+        userLocation = userLocation,
+        calculateDistance = viewModel::calculateDistance,
+        onToggleFavorite = viewModel::toggleFavorite,
+        onPlaceClick = onPlaceClick
+    )
+}
+
+@Composable
+fun FavoritesContent(
+    favoritePlaces: List<com.example.unwnd.data.model.Place>,
+    userLocation: Pair<Double, Double>?,
+    calculateDistance: (Double, Double, Double, Double) -> Float,
+    onToggleFavorite: (String) -> Unit,
+    onPlaceClick: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -54,9 +72,14 @@ fun FavoritesScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(favoritePlaces) { place ->
+                    val distanceText = userLocation?.let { (lat, long) ->
+                        val distance = calculateDistance(lat, long, place.latitude, place.longitude)
+                        String.format(Locale.getDefault(), "%.1f km", distance)
+                    }
                     PlaceCard(
                         place = place,
-                        onToggleFavorite = { viewModel.toggleFavorite(place.id) },
+                        distanceText = distanceText,
+                        onToggleFavorite = { onToggleFavorite(place.id) },
                         onClick = { onPlaceClick(place.id) }
                     )
                 }
@@ -69,8 +92,27 @@ fun FavoritesScreen(
 @Composable
 fun FavoritesScreenPreview() {
     UNWNDTheme {
-        FavoritesScreen(
-            viewModel = UnwndViewModel(),
+        FavoritesContent(
+            favoritePlaces = listOf(
+                com.example.unwnd.data.model.Place(
+                    id = "1",
+                    name = "The Belverdere Grill",
+                    description = "Sample description",
+                    imageUrl = "",
+                    location = "Nairobi",
+                    rating = 4.5,
+                    reviewsCount = 100,
+                    category = "Rooftop",
+                    latitude = -1.3,
+                    longitude = 36.8,
+                    priceRange = "$$$",
+                    isFavorite = true,
+                    tags = listOf("Chill")
+                )
+            ),
+            userLocation = Pair(-1.274, 36.781),
+            calculateDistance = { _, _, _, _ -> 5.2f },
+            onToggleFavorite = {},
             onPlaceClick = {}
         )
     }

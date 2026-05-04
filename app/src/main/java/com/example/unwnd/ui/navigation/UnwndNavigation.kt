@@ -9,7 +9,11 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,6 +21,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.unwnd.data.local.database.AppDatabase
+import com.example.unwnd.data.local.datastore.UserPreferences
+import com.example.unwnd.data.repository.PlaceRepository
 import com.example.unwnd.ui.components.NavigationItem
 import com.example.unwnd.ui.components.UnwndBottomNavigation
 import com.example.unwnd.ui.screens.DetailScreen
@@ -39,7 +46,21 @@ sealed class Screen(val route: String) {
 @Composable
 fun UnwndNavigation() {
     val navController = rememberNavController()
-    val viewModel: UnwndViewModel = viewModel()
+    val context = LocalContext.current
+    
+    // Manual Dependency Injection
+    val database = remember { AppDatabase.getDatabase(context) }
+    val userPrefs = remember { UserPreferences(context) }
+    val repository = remember { PlaceRepository(database.placeDao()) }
+    
+    val viewModel: UnwndViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return UnwndViewModel(repository, userPrefs) as T
+            }
+        }
+    )
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -92,10 +113,16 @@ fun UnwndNavigation() {
                 DetailScreen(
                     placeId = placeId,
                     viewModel = viewModel,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToExplore = {
+                        navController.navigate(Screen.Explore.route) {
+                            popUpTo(Screen.Home.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
-            // Placeholders for other bottom nav screens
             composable(Screen.Explore.route) { 
                 ExploreScreen(viewModel = viewModel)
             }
