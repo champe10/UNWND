@@ -1,57 +1,56 @@
 package com.example.unwnd.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.unwnd.ui.theme.UNWNDTheme
 import com.example.unwnd.ui.viewmodel.UnwndViewModel
-import androidx.compose.ui.tooling.preview.Preview
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 @Composable
 fun ExploreScreen(
     viewModel: UnwndViewModel
 ) {
-    ExploreContent()
-}
 
-@Composable
-fun ExploreContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+    val places by viewModel.filteredPlaces.collectAsState()
+
+    val nairobi = LatLng(-1.2921, 36.8219)
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(nairobi, 12f)
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+
+    GoogleMap(
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState
     ) {
-        Text(
-            text = "Explore",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Map Discovery coming soon!",
-                color = Color.Gray,
-                fontSize = 16.sp
+        places.forEach { place ->
+
+            Marker(
+                state = MarkerState(
+                    position = LatLng(
+                        place.latitude,
+                        place.longitude
+                    )
+                ),
+                title = place.name,
+                snippet = place.location
             )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ExploreScreenPreview() {
-    UNWNDTheme {
-        ExploreContent()
+        Text(
+            text = "Places: ${places.size}",
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
+

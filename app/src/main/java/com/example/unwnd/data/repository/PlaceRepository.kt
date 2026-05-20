@@ -1,7 +1,6 @@
 package com.example.unwnd.data.repository
 
 import com.example.unwnd.data.local.dao.PlaceDao
-import com.example.unwnd.data.model.OpeningHour
 import com.example.unwnd.data.model.Place
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -41,11 +40,7 @@ class PlaceRepository(private val placeDao: PlaceDao) {
                 latitude = .844254976724116,
                 priceRange = "$$$",
                 tags = listOf("Chill Vibes", "Live DJ", "Craft Cocktails"),
-                openingHours = listOf(
-                    OpeningHour("Mon - Thu", "12:00 PM - 11:00 PM"),
-                    OpeningHour("Fri - Sat", "12:00 PM - 02:00 AM", isToday = true),
-                    OpeningHour("Sunday", "11:00 AM - 10:00 PM")
-                )
+
             ),
             Place(
                 id = "2",
@@ -58,7 +53,7 @@ class PlaceRepository(private val placeDao: PlaceDao) {
                 category = "Food",
                 priceRange = "$$-$$$",
                 tags = listOf("Eco-friendly", "Organic", "Outdoor"),
-                waitTime = "15 - 20 mins",
+
                 longitude = -1.3568239430628966,
                 latitude = 36.73935839206449
 

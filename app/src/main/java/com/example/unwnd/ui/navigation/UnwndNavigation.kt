@@ -24,13 +24,11 @@ import androidx.navigation.navArgument
 import com.example.unwnd.data.local.database.AppDatabase
 import com.example.unwnd.data.local.datastore.UserPreferences
 import com.example.unwnd.data.repository.PlaceRepository
+import com.example.unwnd.data.repository.UserRepository
 import com.example.unwnd.ui.components.NavigationItem
 import com.example.unwnd.ui.components.UnwndBottomNavigation
-import com.example.unwnd.ui.screens.DetailScreen
-import com.example.unwnd.ui.screens.ExploreScreen
-import com.example.unwnd.ui.screens.FavoritesScreen
-import com.example.unwnd.ui.screens.HomeScreen
-import com.example.unwnd.ui.screens.ProfileScreen
+import com.example.unwnd.ui.screens.*
+import com.example.unwnd.ui.viewmodel.ProfileViewModel
 import com.example.unwnd.ui.viewmodel.UnwndViewModel
 
 sealed class Screen(val route: String) {
@@ -52,11 +50,20 @@ fun UnwndNavigation() {
     val database = remember { AppDatabase.getDatabase(context) }
     val userPrefs = remember { UserPreferences(context) }
     val repository = remember { PlaceRepository(database.placeDao()) }
+    val userRepository = remember { UserRepository(database.userProfileDao(), userPrefs) }
     
     val viewModel: UnwndViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return UnwndViewModel(repository, userPrefs) as T
+            }
+        }
+    )
+
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ProfileViewModel(userRepository, context.applicationContext) as T
             }
         }
     )
@@ -101,7 +108,9 @@ fun UnwndNavigation() {
                 HomeScreen(
                     viewModel = viewModel,
                     onPlaceClick = { placeId ->
-                        navController.navigate(Screen.Detail.createRoute(placeId))
+                        navController.navigate(Screen.Detail.createRoute(placeId)) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -130,12 +139,14 @@ fun UnwndNavigation() {
                 FavoritesScreen(
                     viewModel = viewModel,
                     onPlaceClick = { placeId ->
-                        navController.navigate(Screen.Detail.createRoute(placeId))
+                        navController.navigate(Screen.Detail.createRoute(placeId)) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
             composable(Screen.Profile.route) { 
-                ProfileScreen()
+                ProfileScreen(viewModel = profileViewModel)
             }
         }
     }

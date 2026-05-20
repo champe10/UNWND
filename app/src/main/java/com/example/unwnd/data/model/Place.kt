@@ -19,13 +19,8 @@ data class Place(
     val category: String,
     val priceRange: String,
     val tags: List<String> = emptyList(),
-    val isFavorite: Boolean = false,
-    val openingHours: List<OpeningHour> = emptyList(),
-    val waitTime: String? = null
+    val isFavorite: Boolean = false
+
+
 )
 
-data class OpeningHour(
-    val day: String,
-    val hours: String,
-    val isToday: Boolean = false
-)

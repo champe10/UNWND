@@ -97,4 +97,8 @@ class UnwndViewModel(
     fun getPlaceById(id: String): StateFlow<Place?> {
         return repository.getPlaceById(id).stateIn(viewModelScope, SharingStarted.Lazily, null)
     }
+
+    fun updateUserLocation(latitude: Double, longitude: Double) {
+        _userLocation.value = latitude to longitude
+    }
 }

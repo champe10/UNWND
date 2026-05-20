@@ -16,10 +16,10 @@ interface PlaceDao {
     fun getFavoritePlaces(): Flow<List<Place>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPlaces(places: List<Place>)
+    suspend fun insertPlaces(places: List<Place>): List<Long>
 
     @Update
-    suspend fun updatePlace(place: Place)
+    suspend fun updatePlace(place: Place): Int
 
     @Query("UPDATE places SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun updateFavoriteStatus(id: String, isFavorite: Boolean): Int

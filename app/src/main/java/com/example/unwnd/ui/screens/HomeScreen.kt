@@ -58,7 +58,7 @@ fun HomeScreen(
     LaunchedEffect(hasLocationPermission.value) {
         if (hasLocationPermission.value) {
             getUserLocation(context) { lat, long ->
-                viewModel.updatedUserLocation(lat, long)
+                viewModel.updateUserLocation(lat, long)
             }
         }
     }
@@ -130,7 +130,9 @@ fun HomeScreen(
         // Trending Horizontal Scroll
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(trendingPlaces) { place ->
+                items(items = trendingPlaces,
+                    key = { it.id }
+                ) { place ->
                     TrendingCard(
                         place = place,
                         onToggleFavorite = { viewModel.toggleFavorite(place.id) },
@@ -150,7 +152,10 @@ fun HomeScreen(
         }
 
         // Vertical Places List
-        items(places) { place ->
+        items(
+            items = places,
+            key = { it.id }
+        ) { place ->
 
             val distanceText = userLocation?.let { (lat, long) ->
                 val distance = viewModel.calculateDistance(lat,
@@ -307,7 +312,9 @@ fun TrendingCard(
     Card(
         modifier = Modifier
             .width(180.dp)
-            .clickable(onClick = onClick),
+            .clickable{
+                 onClick()
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(4.dp)
