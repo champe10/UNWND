@@ -47,10 +47,7 @@ fun ExploreScreen(
             )
         }
     }
-        Text(
-            text = "Places: ${places.size}",
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
+
     }
 }
 
